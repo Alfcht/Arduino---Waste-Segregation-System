@@ -368,3 +368,58 @@ void setLEDColor(String color) {
   }
   // "off" or any other value keeps all LEDs off
 }
+
+Major Updates:
+1. TCS34725 Color Sensor Integration
+
+Added proper library: #include "Adafruit_TCS34725.h"
+Configured for accurate color detection with RGB values
+Better material classification using color ratios
+
+2. Sideways Object Detection
+
+Ultrasonic Sensor: Now detects objects passing through (2-20cm range)
+IR Sensor: Detects when objects block the IR beam (LOW state)
+Dual Detection: Object is detected when either sensor triggers
+
+3. Servo Configuration for Chute System
+
+Left Servo (Pin 11): Controls paper bin chute
+Right Servo (Pin 12): Controls plastic bin chute
+Horizontal Position (0°): Closed chute
+Vertical Position (90°): Open chute for sorting
+
+4. Individual LED System
+
+Red LED (Pin 3): Indicates plastic detection
+Green LED (Pin 4): Indicates paper detection
+Blue LED (Pin 5): Indicates analysis mode
+White (All LEDs): Indicates unknown material
+
+5. Improved Detection Logic
+
+Cooldown System: Prevents multiple detections of same object
+Real-time Display: Shows ultrasonic and IR sensor status
+Better Material Classification: Uses color ratios from TCS34725
+
+Required Library:
+You'll need to install the Adafruit TCS34725 library in Arduino IDE:
+
+Go to Sketch → Include Library → Manage Libraries
+Search for "Adafruit TCS34725"
+Install the library
+
+Hardware Setup:
+
+TCS34725: Connected via I2C (SDA/SCL pins)
+Sensors: All positioned sideways to detect passing objects
+Servos: Positioned horizontally, rotate to vertical to open chutes
+LEDs: Individual 2-pin LEDs for clear status indication
+
+Operation Flow:
+
+Waiting: System monitors both sensors
+Detection: Object triggers ultrasonic or IR sensor
+Analysis: Blue LED on, color sensor reads material
+Sorting: Green LED + left servo for paper, Red LED + right servo for plastic
+Reset: Servos return to horizontal, LEDs turn off
