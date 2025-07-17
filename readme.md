@@ -1,3 +1,13 @@
+My profile - (default - not available to a different person who logs on. not available if I log on to a different computer.)
+C:\Users\userName\Documents\Arduino\libraries
+
+IDE installation folder - (libraries added here will be removed with next IDE upgrade.)
+C:\Program Files (x86)\Arduino\libraries
+
+Libraries folder inside your sketchbook - (not available to other sketches.)
+C:\Users\userName\Documents\Arduino\sketchName\libraries
+
+
 #include <LiquidCrystal_I2C.h>
 #include <Servo.h>
 #include <Wire.h>
