@@ -530,7 +530,7 @@ void processObject() {
   rightServo.write(0);
   setLEDs(0, 0, 0);
   objectDetected = false;
-  delay(1000);
+  delay(3000);
 }
 
 bool checkUltrasonic() {
