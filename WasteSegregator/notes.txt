@@ -1,0 +1,69 @@
+Based on your waste segregation system that rewards users with phone charging,
+you'll need several components to safely charge mobile phones via USB. Here are the recommended modules:
+
+Primary Charging Module
+TP4056 USB-C Lithium Battery Charging Module with Protection
+
+Input: 5V via USB or DC jack
+Output: 5V/1A USB-A port for phone charging
+Built-in protection (overcharge, overdischarge, short circuit)
+Easy to integrate with relay control
+Cost: ~$3-5
+Power Supply Components
+5V 3A Power Supply Module
+
+Powers both Arduino and charging circuit
+Sufficient current for phone charging (typically 1-2A)
+Options: AC-DC converter or USB power supply
+
+Control Component (Already in your code)
+Your existing relay setup is perfect:
+const int chargingRelayPin = 6; // Pin to control charging module relay
+
+Recommended Circuit Integration
+
+// Enhanced charging control with safety features
+void startCharging() {
+  // Check if USB device is connected (optional)
+  if (digitalRead(usbDetectPin) == HIGH) {
+    isCharging = true;
+    chargingStartTime = millis();
+    digitalWrite(chargingRelayPin, HIGH); // Enable TP4056 module
+    
+    lcd.clear();
+    lcd.print(F("REWARD!"));
+    lcd.setCursor(0, 1);
+    lcd.print(F("Charging Phone"));
+    setLEDs(0, 1, 0);
+    
+    Serial.println(F("Started 5-minute charging cycle"));
+  } else {
+    lcd.clear();
+    lcd.print(F("Connect USB"));
+    lcd.setCursor(0, 1);
+    lcd.print(F("Cable First"));
+    delay(2000);
+  }
+}
+
+Additional Components (Optional)
+USB Current Sensor Module (INA219) - Monitor charging current
+USB Type-A Female Connector - For phone connection
+5V Relay Module - Control power to charging circuit
+Buck Converter Module - Voltage regulation if needed
+
+Wiring Diagram
+Arduino Pin 6 → Relay Control
+Relay NO → TP4056 VIN+
+Power Supply 5V → Relay Common
+TP4056 GND → Common Ground
+TP4056 USB-A → Phone charging port
+
+Safety Features to Add
+Overcurrent protection
+Temperature monitoring
+USB connection detection
+Charging timeout (already implemented)
+The TP4056 module is the most recommended solution as it's specifically
+designed for safe USB charging with built-in protections
+and works perfectly with your existing relay control system.

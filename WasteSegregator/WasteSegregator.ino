@@ -22,6 +22,7 @@ const int greenLED = 4;
 const int blueLED = 5;
 const int leftServoPin = 11;
 const int rightServoPin = 12;
+const int chargingRelayPin = 6; // Pin to control charging module relay
 
 // Variables - optimized for memory
 long duration;
@@ -31,6 +32,11 @@ uint16_t r, g, b, c;
 bool colorSensorAvailable = false;
 unsigned long lastDetectionTime = 0;
 const unsigned long detectionCooldown = 3000;
+
+// Charging system variables
+bool isCharging = false;
+unsigned long chargingStartTime = 0;
+const unsigned long chargingDuration = 300000; // 5 minutes in milliseconds
 
 // Color analysis variables - reduced memory footprint
 const byte numReadings = 5;  // Reduced from 7 to save memory
@@ -69,8 +75,10 @@ void setup() {
   pinMode(redLED, OUTPUT);
   pinMode(greenLED, OUTPUT);
   pinMode(blueLED, OUTPUT);
+  pinMode(chargingRelayPin, OUTPUT);
   
   setLEDs(0, 0, 0);
+  digitalWrite(chargingRelayPin, LOW); // Ensure charging is off initially
   delay(1000);
   
   // Initialize color sensor
@@ -306,6 +314,12 @@ void calibrateAmbient() {
 void loop() {
   if (!colorSensorAvailable) return;
   
+  // Handle charging cycle
+  if (isCharging) {
+    handleCharging();
+    return; // Skip detection while charging
+  }
+  
   bool usDetection = checkUltrasonic();
   bool irDetection = digitalRead(irPin) == LOW;
   bool detected = usDetection || irDetection;
@@ -469,7 +483,7 @@ byte classifyFallback() {
   return 0;
 }
 
-// Enhanced material detection with stability check
+// Enhanced material detection with stability check and charging reward
 void processObject() {
   objectDetected = true;
   lastDetectionTime = millis();
@@ -500,6 +514,8 @@ void processObject() {
   Serial.print(F("Final: "));
   Serial.println(material);
   
+  bool successfulSegregation = false;
+  
   if (material == 1) {
     lcd.clear();
     lcd.print(F("PAPER"));
@@ -507,6 +523,7 @@ void processObject() {
     lcd.print(F("LEFT BIN"));
     setLEDs(0, 1, 0);
     leftServo.write(90);
+    successfulSegregation = true;
   } 
   else if (material == 2) {
     lcd.clear();
@@ -515,6 +532,7 @@ void processObject() {
     lcd.print(F("RIGHT BIN"));
     setLEDs(1, 0, 0);
     rightServo.write(90);
+    successfulSegregation = true;
   } 
   else {
     lcd.clear();
@@ -530,7 +548,88 @@ void processObject() {
   rightServo.write(0);
   setLEDs(0, 0, 0);
   objectDetected = false;
+  
+  // Start charging if segregation was successful
+  if (successfulSegregation) {
+    startCharging();
+  }
+  
   delay(1000);
+}
+
+// Start the 5-minute charging cycle
+void startCharging() {
+  isCharging = true;
+  chargingStartTime = millis();
+  digitalWrite(chargingRelayPin, HIGH); // Turn on charging module
+  
+  lcd.clear();
+  lcd.print(F("REWARD!"));
+  lcd.setCursor(0, 1);
+  lcd.print(F("Charging Phone"));
+  setLEDs(0, 1, 0); // Green LED to indicate charging
+  
+  Serial.println(F("Started 5-minute charging cycle"));
+}
+
+// Handle the charging cycle and display countdown
+void handleCharging() {
+  unsigned long currentTime = millis();
+  unsigned long elapsedTime = currentTime - chargingStartTime;
+  
+  // Check if 5 minutes have passed
+  if (elapsedTime >= chargingDuration) {
+    stopCharging();
+    return;
+  }
+  
+  // Calculate remaining time
+  unsigned long remainingTime = chargingDuration - elapsedTime;
+  int remainingMinutes = remainingTime / 60000;
+  int remainingSeconds = (remainingTime % 60000) / 1000;
+  
+  // Update display every second
+  static unsigned long lastDisplayUpdate = 0;
+  if (currentTime - lastDisplayUpdate >= 1000) {
+    lcd.clear();
+    lcd.print(F("CHARGING..."));
+    lcd.setCursor(0, 1);
+    lcd.print(remainingMinutes);
+    lcd.print(F("m "));
+    if (remainingSeconds < 10) lcd.print(F("0"));
+    lcd.print(remainingSeconds);
+    lcd.print(F("s left"));
+    
+    // Blink green LED to show charging activity
+    static bool ledState = false;
+    ledState = !ledState;
+    setLEDs(0, ledState, 0);
+    
+    lastDisplayUpdate = currentTime;
+  }
+}
+
+// Stop charging and return to normal operation
+void stopCharging() {
+  isCharging = false;
+  digitalWrite(chargingRelayPin, LOW); // Turn off charging module
+  setLEDs(0, 0, 0);
+  
+  lcd.clear();
+  lcd.print(F("CHARGING"));
+  lcd.setCursor(0, 1);
+  lcd.print(F("COMPLETE!"));
+  setLEDs(0, 1, 0);
+  delay(2000);
+  setLEDs(0, 0, 0);
+  
+  Serial.println(F("Charging cycle completed"));
+  
+  lcd.clear();
+  lcd.print(F("Thank You!"));
+  lcd.setCursor(0, 1);
+  lcd.print(F("Ready to Sort"));
+  delay(2000);
 }
 
 bool checkUltrasonic() {
